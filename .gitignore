@@ -1,0 +1,7 @@
+.vscode/
+*.txt
+*.doc
+*.rtf
+main
+child_1
+child_2
