@@ -12,7 +12,7 @@ int main(){
         } else if(s_len<=0 ){
             break;
         } else{
-            if(string_invert(&output_string, input_strint, s_len)==0){;
+            if(string_invert(&output_string, input_strint, s_len)==0){
                 write(STDOUT_FILENO, " String_invert Error2! ", 24);
                 break;
             } else{
