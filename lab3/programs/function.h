@@ -18,7 +18,6 @@
 #define MEMORY_NAME1 "fd_virt1"
 #define MEMORY_NAME2 "fd_virt2"
 
-
 int inputing(char **output_name, int fd, int endl_status);
 void pipe_creation(int *fd);
 int process_creation();

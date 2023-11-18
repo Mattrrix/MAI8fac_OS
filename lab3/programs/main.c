@@ -21,48 +21,47 @@ int main(){
     int fd1 = shm_open(
         MEMORY_NAME1, 
         O_CREAT | O_RDWR, 
-        S_IRUSR | S_IWUSR);
+        0666);
 
      if (ftruncate(fd1, MAX_LEN) == -1) {
-        perror("\nftruncate: here is a problem\n");
-        if(shm_unlink(MEMORY_NAME1) == -1){
-            perror("munmap: Here is a problem");
-            _exit(EXIT_FAILURE);
-        }
-        close(fd1);
-        _exit(EXIT_FAILURE);
+        perror("\nftruncate1 error:\n");
+        exit(EXIT_FAILURE);
     }
+    
+    char* addr1 = NULL;
 
-    char* addr1 = (char*)mmap(
+    if( (addr1 = (char*)mmap(
         NULL, 
         MAX_LEN, 
         PROT_WRITE | PROT_READ, 
         MAP_SHARED, 
         fd1, 
-        0);
+        0)) == (void*)-1){
+        perror("\nerror mapping fd1 to memory\n");
+        _exit(EXIT_FAILURE);
+    }
+
     if(addr1 == MAP_FAILED){
-        perror("\nmmap: there is a problem\n");
+        perror("\nmmap1 failed\n");
         _exit(EXIT_FAILURE);
     }
 
     pid_t pid_1 = process_creation();
     if (pid_1 == 0){
         // the 1st child
-        if(dup2(fd1, STDIN_FILENO) == -1){
-                perror("dup2 erorr ");
-                exit(-1);
-            }
+
         if(dup2(f1_output, STDOUT_FILENO)==-1){
-            perror("dup2 erorr ");
+            perror("dup2 error: ");
             exit(-1);
         }
+
         if(dup2(f1_output, STDERR_FILENO)==-1){
-            perror("dup2 erorr ");
+            perror("dup2 error: ");
             exit(-1);
         }
           
         if(execl("./child_1", "./child_1", NULL)==-1){
-            perror("execl erorr ");
+            perror("execl error: ");
             exit(-1);
         }
 
@@ -85,26 +84,29 @@ int main(){
         int fd2 = shm_open(
             MEMORY_NAME2, 
             O_CREAT | O_RDWR, 
-            S_IRUSR | S_IWUSR);
+            0666);
 
         if (ftruncate(fd2, MAX_LEN) == -1) {
-            perror("\nftruncate: here is a problem\n");
-            if(shm_unlink(MEMORY_NAME1) == -1){
-                perror("munmap: Here is a problem");
-                _exit(EXIT_FAILURE);
-            }
-            close(fd2);
-            _exit(EXIT_FAILURE);
+            perror("\nftruncate2 error:\n");
+            exit(EXIT_FAILURE);
         }
-        char* addr2 = (char*)mmap(
+
+        char* addr2 = NULL;
+
+        if( (addr2 = (char*)mmap(
             NULL, 
-            MAX_LEN,
+            MAX_LEN, 
             PROT_WRITE | PROT_READ, 
             MAP_SHARED, 
             fd2, 
-            0);
+            0))== (void*)-1)
+        {
+            perror("\nerror mapping fd1 to memory: \n");
+            _exit(EXIT_FAILURE);
+        }
+
         if(addr2 == MAP_FAILED){
-            perror("\nmmap: there is a problem\n");
+            perror("\nmmap failed:\n");
             _exit(EXIT_FAILURE);
         }
 
@@ -112,31 +114,30 @@ int main(){
         if(pid_2==0){
             //the 2nd child
             close(f1_output);
-            if(dup2(fd2, STDIN_FILENO) == -1){
-                perror("dup2 erorr ");
-                exit(-1);
-            }
+
             if(dup2(f2_output, STDOUT_FILENO)==-1){
-                perror("dup2 erorr ");
+                perror("dup2 error: ");
                 exit(-1);
             }
             if(dup2(f2_output, STDERR_FILENO)==-1){
-                perror("dup2 erorr ");
+                perror("dup2 error: ");
                 exit(-1);
             }
             
             if(execl("./child_2", "./child_2", NULL)==-1){
-                perror(" execl erorr ");
+                perror(" execl error: ");
                 exit(-1);
             }
 
         } else{ 
             // parent
-            write(STDOUT_FILENO, "Enter something you want: ", 27);
+            if(write(STDOUT_FILENO, "Enter something you want: ", 27) == -1){
+                        perror("write error: ");
+                        exit(-1);
+                    }
             while(true){
                 char*s=NULL;
-                char str[2] = "-";
-                int count = 0;
+                char str[1] = "-";
                 int s_len=inputing(&s, STDIN_FILENO, 1);
 
                 if(s_len==-1){
@@ -148,29 +149,33 @@ int main(){
                 if (prob_res==1){
 
                     strcpy(addr1, s);
+                    // printf("%s, addr1\n",addr1);
                     strcpy(addr2, str);
+                    // printf("%s, addr2\n",addr2);
 
                 }else{
-
+                    
                     strcpy(addr2, s);
+                    // printf("%s, addr2\n",addr2);
                     strcpy(addr1, str);
+                    // printf("%s, addr1\n",addr1);
 
                 }
             }
             if(munmap(addr1, MAX_LEN) == -1){
-                perror("munmap: Here is a problem");
+                perror("mumap1 error:");
                 _exit(EXIT_FAILURE);
             }
             if(munmap(addr2, MAX_LEN) == -1){
-                perror("munmap: Here is a problem");
+                perror("mumap2 error:");
                 _exit(EXIT_FAILURE);
             }
             if(shm_unlink(MEMORY_NAME1) == -1){
-                perror("shm_unlink1: Here is a problem");
+                perror("shm_unlink error:");
                 _exit(EXIT_FAILURE);
             }
             if(shm_unlink(MEMORY_NAME2) == -1){
-                perror("shm_unlink2: Here is a problem");
+                perror("shm_unlink error:");
                 _exit(EXIT_FAILURE);
             }
             close(fd1);

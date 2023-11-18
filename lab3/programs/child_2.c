@@ -4,24 +4,30 @@ int main(){
 
     int fd2 = shm_open(
         MEMORY_NAME2, 
-        O_RDONLY, 
-        S_IRUSR | S_IWUSR);
+        O_CREAT | O_RDWR, 
+        0666);
 
-    char* addr2 = (char*)mmap(
+    char* addr2 = NULL;
+
+    if( (addr2 = (char*)mmap(
         NULL, 
         MAX_LEN, 
         PROT_READ, 
         MAP_SHARED, 
-        STDIN_FILENO, 
-        0);
-    if(addr2 == MAP_FAILED){
-        perror("\n(child2)nmmap: there is a problem\n");
+        fd2, 
+        0)) == (void*)-1){
+        perror("\nerror mapping fd1 to memory\n");
         _exit(EXIT_FAILURE);
     }
 
+    if(addr2 == MAP_FAILED){
+        perror("\nmmap1 failed\n");
+        _exit(EXIT_FAILURE);
+    }
+    printf("%s, addr2\n",addr2); // в итоге выводит что addr2 пуст
     while(true){
         char *input_strint=NULL;
-        int s_len=inputing(&input_strint, STDIN_FILENO, 0); 
+        int s_len=inputing(&input_strint, fd2, 0); 
         char* output_string=NULL;
 
         if ((input_strint[0]=='-')){

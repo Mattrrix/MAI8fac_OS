@@ -1,27 +1,34 @@
 #include "function.h"
 
 int main(){
-
     int fd1 = shm_open(
         MEMORY_NAME1, 
-        O_RDONLY,
-        S_IRUSR | S_IWUSR);
+        O_CREAT| O_RDONLY,
+        0666);
 
-    char* addr1 = (char*)mmap(
+    char* addr1 = NULL;
+
+    if( (addr1 = (char*)mmap(
         NULL, 
-        MAX_LEN,
+        MAX_LEN, 
         PROT_READ, 
         MAP_SHARED, 
-        STDIN_FILENO,
-        0);
-    if(addr1 == MAP_FAILED){
-        perror("\n(child1)mmap: there is a problem\n");
+        fd1, 
+        0)) == (void*)-1){
+        perror("\nerror mapping fd1 to memory\n");
         _exit(EXIT_FAILURE);
     }
 
+    if(addr1 == MAP_FAILED){
+        perror("\nmmap1 failed\n");
+        _exit(EXIT_FAILURE);
+    }
+
+    printf("%s, addr1\n",addr1); //в итоге выводит что addr1 пуст
+    
     while(true){
         char *input_strint=NULL;
-        int s_len=inputing(&input_strint, STDIN_FILENO, 0);
+        int s_len=inputing(&input_strint, fd1, 0);
         char* output_string=NULL;
 
         if ((input_strint[0]=='-')){
