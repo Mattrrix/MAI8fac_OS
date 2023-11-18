@@ -2,15 +2,26 @@
 
 int main(){
 
-    int fd1= shm_open(MEMORY_NAME1, O_RDONLY, S_IRUSR | S_IWUSR);
-    check_error(fd1 == -1, "Can't open shared memory file");
-    res *addr1 = mmap(NULL, MEMORY_SIZE, PROT_READ, MAP_SHARED, fd1, 0);
-    check_error(addr1 == (void*)-1, "Mmap error");
+    int fd1 = shm_open(
+        MEMORY_NAME1, 
+        O_RDONLY,
+        S_IRUSR | S_IWUSR);
+
+    char* addr1 = (char*)mmap(
+        NULL, 
+        MAX_LEN,
+        PROT_READ, 
+        MAP_SHARED, 
+        STDIN_FILENO,
+        0);
+    if(addr1 == MAP_FAILED){
+        perror("\n(child1)mmap: there is a problem\n");
+        _exit(EXIT_FAILURE);
+        }
 
     while(true){
         char *input_strint=NULL;
-        int s_len=inputing(&input_strint, fd1, 0); 
-
+        int s_len=inputing(&input_strint, STDIN_FILENO, 0);
         char* output_string=NULL;
 
         if ((input_strint[0]=='-')){
@@ -25,6 +36,7 @@ int main(){
                 write(STDOUT_FILENO, output_string, s_len*sizeof(char));
             }
         }
-    }
+    
     return 0;
+}
 }

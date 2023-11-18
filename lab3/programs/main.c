@@ -2,7 +2,7 @@
 
 int main(){
 
-    write(STDOUT_FILENO, "Enter the first filename with file extension(.txt or .doc or .rtf): ", 67);
+    write(STDOUT_FILENO, "Enter the first filename with file extension(.txt or .doc or .rtf): \n", 67);
 
     char *Filename_1=NULL;
 
@@ -18,24 +18,40 @@ int main(){
         exit(-1);
     }
 
-    int fd1 = shm_open(MEMORY_NAME1, O_EXCL | O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-    check_error(fd1 == -1, "Can't open shared memory file");
-    res *addr1 = mmap(NULL, MEMORY_SIZE, PROT_WRITE, MAP_SHARED, fd1, 0);
-    check_error(addr1 == (void*)-1, "Mmap error");
+    int fd1 = shm_open(
+        MEMORY_NAME1, 
+        O_CREAT | O_RDWR, 
+        S_IRUSR | S_IWUSR);
+
+     if (ftruncate(fd1, MAX_LEN) == -1) {
+        perror("\nftruncate: here is a problem\n");
+        if(shm_unlink(MEMORY_NAME1) == -1){
+            perror("munmap: Here is a problem");
+            _exit(EXIT_FAILURE);
+        }
+        close(fd1);
+        _exit(EXIT_FAILURE);
+    }
+
+    char* addr1 = (char*)mmap(
+        NULL, 
+        MAX_LEN, 
+        PROT_WRITE | PROT_READ, 
+        MAP_SHARED, 
+        fd1, 
+        0);
+    if(addr1 == MAP_FAILED){
+        perror("\nmmap: there is a problem\n");
+        _exit(EXIT_FAILURE);
+    }
 
     pid_t pid_1 = process_creation();
     if (pid_1 == 0){
         // the 1st child
-        // close(pipe1[1]); // fd_pipe_1[1] for writing
-        // close(pipe2[0]); // fd_pipe_2[0] for reading
-        // close(pipe2[1]); // fd_pipe_2[1] for writing
-        
-        // if(dup2(pipe1[0], STDIN_FILENO)==-1){
-            
-        //     perror("dup2 erorr ");
-        //     exit(-1);
-        // }
-
+        if(dup2(fd1, STDIN_FILENO) == -1){
+                perror("dup2 erorr ");
+                exit(-1);
+            }
         if(dup2(f1_output, STDOUT_FILENO)==-1){
             perror("dup2 erorr ");
             exit(-1);
@@ -49,10 +65,6 @@ int main(){
             perror("execl erorr ");
             exit(-1);
         }
-
-        // close(pipe1[0]);
-        // close(pipe2[1]);
-        // close(f1_output);
 
     }else { 
         // parent
@@ -69,25 +81,41 @@ int main(){
             fprintf(stderr, "Can't open the file:  %s", Filename_2);
             exit(-1);
         }
-        
-        int fd2 = shm_open(MEMORY_NAME2, O_EXCL | O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-        check_error(fd2 == -1, "Can't open shared memory file");
-        res *addr2 = mmap(NULL, MEMORY_SIZE, PROT_WRITE, MAP_SHARED, fd2, 0);
-        check_error(addr2 == (void*)-1, "Mmap error");
+
+        int fd2 = shm_open(
+            MEMORY_NAME2, 
+            O_CREAT | O_RDWR, 
+            S_IRUSR | S_IWUSR);
+
+        if (ftruncate(fd2, MAX_LEN) == -1) {
+            perror("\nftruncate: here is a problem\n");
+            if(shm_unlink(MEMORY_NAME1) == -1){
+                perror("munmap: Here is a problem");
+                _exit(EXIT_FAILURE);
+            }
+            close(fd2);
+            _exit(EXIT_FAILURE);
+        }
+        char* addr2 = (char*)mmap(
+            NULL, 
+            MAX_LEN,
+            PROT_WRITE | PROT_READ, 
+            MAP_SHARED, 
+            fd2, 
+            0);
+        if(addr2 == MAP_FAILED){
+            perror("\nmmap: there is a problem\n");
+            _exit(EXIT_FAILURE);
+        }
+
         pid_t pid_2=process_creation();
         if(pid_2==0){
             //the 2nd child
             close(f1_output);
-            //close(pipe1[0]);  // fd_pipe_1[0] for reading
-            //close(pipe1[1]); // fd_pipe_1[1] for writing
-            // close(pipe2[1]); // fd_pipe_2[1] for writing
-
-            //if(dup2(pipe2[0], STDIN_FILENO)==-1){
-                
-            //     perror("dup2 erorr ");
-            //     exit(-1);
-            // }
-
+            if(dup2(fd2, STDIN_FILENO) == -1){
+                perror("dup2 erorr ");
+                exit(-1);
+            }
             if(dup2(f2_output, STDOUT_FILENO)==-1){
                 perror("dup2 erorr ");
                 exit(-1);
@@ -102,65 +130,57 @@ int main(){
                 exit(-1);
             }
 
-            // close(pipe2[0]);
-            // close(f2_output);
-
         } else{ 
             // parent
-            // close(pipe1[0]);
-            // close(pipe2[0]); 
-            
             write(STDOUT_FILENO, "Enter something you want: ", 27);
             while(true){
                 char*s=NULL;
                 char str[2] = "-";
+                int count = 0;
                 int s_len=inputing(&s, STDIN_FILENO, 1);
+
                 if(s_len==-1){
                     break;
                 }
-                write(STDIN_FILENO, s, sizeof(char)*s_len);
-                int prob_res=probability();
-                if (prob_res==1){
-                    addr1->data[addr1->size] = *s;
-                    strcat(addr2->data, str);
-                }else{
-                    addr2->data[addr2->size] = *s;
-                    strcat(addr1->data, str);
-                }
-            //     if(prob_res==1){
-            //         if(write(fd1, s, sizeof(char)*s_len)==-1){
-            //             perror("write error ");
-            //             exit(-1);
-            //         }
-            //         if (write(fd2, "-", sizeof("-"))==-1){
-            //             perror("write error ");
-            //             exit(-1);
-            //         }
 
-            //     } else{
-            //         if (write(fd2, s, s_len*sizeof(char))==-1){
-            //             perror("write error ");
-            //             exit(-1);
-            //         }
-            //         if(write(fd1, "-", sizeof("-"))==-1){
-            //             perror("write error ");
-            //             exit(-1);
-            //         }
-            //     }
-            // }
-            munmap(addr1, MEMORY_SIZE);
-            munmap(addr2, MEMORY_SIZE);
-            shm_unlink(MEMORY_NAME1);
-            shm_unlink(MEMORY_NAME2);
-            write(STDOUT_FILENO, "\nProgramm was ended successfully!\n", 35);
-            // close(pipe1[1]);
-            // close(pipe2[1]);
+                int prob_res=probability();
+
+                if (prob_res==1){
+
+                    strcpy(addr1, s);
+                    strcpy(addr2, str);
+
+                }else{
+
+                    strcpy(addr2, s);
+                    strcpy(addr1, str);
+
+                }
+            }
+            if(munmap(addr1, MAX_LEN) == -1){
+                perror("munmap: Here is a problem");
+                _exit(EXIT_FAILURE);
+            }
+            if(munmap(addr2, MAX_LEN) == -1){
+                perror("munmap: Here is a problem");
+                _exit(EXIT_FAILURE);
+            }
+            if(shm_unlink(MEMORY_NAME1) == -1){
+                perror("shm_unlink1: Here is a problem");
+                _exit(EXIT_FAILURE);
+            }
+            if(shm_unlink(MEMORY_NAME2) == -1){
+                perror("shm_unlink2: Here is a problem");
+                _exit(EXIT_FAILURE);
+            }
+            close(fd1);
+            close(fd2);
             close(f1_output);
             close(f2_output);
         	kill(pid_1, SIGTERM);
             kill(pid_2, SIGTERM);
-
+            write(STDOUT_FILENO, "\nProgramm was ended successfully!\n", 35);
         }
     }
 }
-}
+

@@ -1,13 +1,5 @@
 #include "function.h"
 
-void check_error(bool expression, char* message) {
-    if (expression) {
-        write(STDOUT_FILENO, message, strlen(message) * sizeof(char));
-        write(STDOUT_FILENO, "\n", 1);
-        exit(-1);
-    }
-}
-
 int inputing(char **s_output, int fd, int endl_status){ 
     int new_l=MAX_LEN; 
     char *tmp=NULL; //временный указатель для переопределения памяти
