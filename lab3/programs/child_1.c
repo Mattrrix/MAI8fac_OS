@@ -17,7 +17,7 @@ int main(){
     if(addr1 == MAP_FAILED){
         perror("\n(child1)mmap: there is a problem\n");
         _exit(EXIT_FAILURE);
-        }
+    }
 
     while(true){
         char *input_strint=NULL;
@@ -36,7 +36,6 @@ int main(){
                 write(STDOUT_FILENO, output_string, s_len*sizeof(char));
             }
         }
-    
+    }
     return 0;
-}
 }
