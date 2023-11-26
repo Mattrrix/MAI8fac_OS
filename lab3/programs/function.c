@@ -2,8 +2,8 @@
 
 int inputing(char **s_output, int fd, int endl_status){ 
     int new_l=MAX_LEN; 
-    char *tmp=NULL; //временный указатель для переопределения памяти
     char *line=(char*)malloc(sizeof(char)*new_l); // выделяем память под line размером MAX_LEN = 255 байт
+    memset(line, 0 , new_l);
     int i=0; 
     char ch; // выделили 1 байт, чтобы считывать STDIN_FILENO посимвольно
     read(fd, &ch, sizeof(ch)); 
@@ -15,10 +15,7 @@ int inputing(char **s_output, int fd, int endl_status){
     while(ch!=EOF && ch!='\0' && ch!='\n' ){ 
         if(i>=new_l){ // проверка не достигнута ли максимальная длина строки
             new_l=new_l*2;
-            tmp=(char *)realloc(line, new_l); //увеличиваем объем выделенной памяти
-            line=tmp; 
-            tmp=NULL;
-            free(tmp);
+            line=(char *)realloc(line, new_l); //увеличиваем объем выделенной памяти
         }
         line[i]=ch;
         i++;
@@ -28,17 +25,13 @@ int inputing(char **s_output, int fd, int endl_status){
     if(endl_status!=0){ // если нужно вводить строку НЕ один раз
         if(i>=new_l){
             new_l=new_l*2;
-            tmp=(char *)realloc(line, new_l);
-            line=tmp;
-            tmp=NULL;
-            free(tmp);
+            line=(char *)realloc(line, new_l);
         }
         line[i]='\n';
         i++;
     }
+    line[i] = '\0';
     *s_output=line;
-    line=NULL;
-    free(line);
     return i;
 }
 

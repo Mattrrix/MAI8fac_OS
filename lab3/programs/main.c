@@ -5,6 +5,7 @@ int main(){
     write(STDOUT_FILENO, "Enter the first filename with file extension(.txt or .doc or .rtf): \n", 67);
 
     char *Filename_1=NULL;
+    char *Filename_2=NULL;
 
     if(inputing(&Filename_1 ,STDIN_FILENO, 0)<=0){
         perror("Trying to create 0-value string: ");
@@ -12,7 +13,8 @@ int main(){
     }
 
     int f1_output=open(Filename_1, O_WRONLY | O_CREAT, 0777);
-
+    int f2_output;
+    
     if(f1_output==-1){
         fprintf(stderr, "Can't open the file:  %s", Filename_1);
         exit(-1);
@@ -23,12 +25,15 @@ int main(){
         O_CREAT | O_RDWR, 
         0666);
 
-     if (ftruncate(fd1, MAX_LEN) == -1) {
+    int fd2;
+
+    if (ftruncate(fd1, MAX_LEN) == -1) {
         perror("\nftruncate1 error:\n");
         exit(EXIT_FAILURE);
     }
     
     char* addr1 = NULL;
+    char* addr2 = NULL;
 
     if( (addr1 = (char*)mmap(
         NULL, 
@@ -47,6 +52,7 @@ int main(){
     }
 
     pid_t pid_1 = process_creation();
+    pid_t pid_2;
     if (pid_1 == 0){
         // the 1st child
 
@@ -65,23 +71,25 @@ int main(){
             exit(-1);
         }
 
-    }else { 
+    }
+    else
+    { 
         // parent
         write(STDOUT_FILENO, "\nEnter the second filename with file extension(.txt or .doc or .rtf): ", 71);
-        char *Filename_2=NULL;
+        
 
         if(inputing(&Filename_2 ,STDIN_FILENO, 0)<=0){
             perror("Trying to create 0-value string: ");
             exit(-1);
         }
         
-        int f2_output=open(Filename_2, O_WRONLY | O_CREAT, 0777);
+        f2_output=open(Filename_2, O_WRONLY | O_CREAT, 0777);
         if(f2_output==-1){
             fprintf(stderr, "Can't open the file:  %s", Filename_2);
             exit(-1);
         }
 
-        int fd2 = shm_open(
+        fd2 = shm_open(
             MEMORY_NAME2, 
             O_CREAT | O_RDWR, 
             0666);
@@ -91,7 +99,7 @@ int main(){
             exit(EXIT_FAILURE);
         }
 
-        char* addr2 = NULL;
+        // char* addr2 = NULL;
 
         if( (addr2 = (char*)mmap(
             NULL, 
@@ -110,7 +118,7 @@ int main(){
             _exit(EXIT_FAILURE);
         }
 
-        pid_t pid_2=process_creation();
+        pid_2=process_creation();
         if(pid_2==0){
             //the 2nd child
             close(f1_output);
@@ -129,18 +137,23 @@ int main(){
                 exit(-1);
             }
 
-        } else{ 
+        }
+        else
+        { 
             // parent
-            if(write(STDOUT_FILENO, "Enter something you want: ", 27) == -1){
-                        perror("write error: ");
-                        exit(-1);
-                    }
-            while(true){
+            if(write(STDOUT_FILENO, "Enter something you want: ", 27) == -1)
+            {
+                perror("write error: ");
+                exit(-1);
+            }
+            while(true)
+            {
                 char*s=NULL;
                 char str[1] = "-";
                 int s_len=inputing(&s, STDIN_FILENO, 1);
 
                 if(s_len==-1){
+                    free(s);
                     break;
                 }
 
@@ -148,44 +161,53 @@ int main(){
 
                 if (prob_res==1){
 
-                    strcpy(addr1, s);
-                    // printf("%s, addr1\n",addr1);
-                    strcpy(addr2, str);
-                    // printf("%s, addr2\n",addr2);
+                    // strcpy(addr1, s);
+                    memcpy(addr1, s, s_len);
+                    printf("%s, addr1\n",addr1);
+                    // strcpy(addr2, str);
+                    memcpy(addr2, str, 2);
+                    printf("%s, addr2\n",addr2);
 
                 }else{
                     
-                    strcpy(addr2, s);
-                    // printf("%s, addr2\n",addr2);
-                    strcpy(addr1, str);
-                    // printf("%s, addr1\n",addr1);
+                    // strcpy(addr2, s);
+                    memcpy(addr2, s, s_len);
+                    printf("%s, addr2\n",addr2);
+                    // strcpy(addr1, str);
+                    memcpy(addr1, str, 2);
+                
+                    printf("%s, addr1\n",addr1);
 
                 }
+                free(s);
             }
-            if(munmap(addr1, MAX_LEN) == -1){
-                perror("mumap1 error:");
-                _exit(EXIT_FAILURE);
-            }
-            if(munmap(addr2, MAX_LEN) == -1){
-                perror("mumap2 error:");
-                _exit(EXIT_FAILURE);
-            }
-            if(shm_unlink(MEMORY_NAME1) == -1){
-                perror("shm_unlink error:");
-                _exit(EXIT_FAILURE);
-            }
-            if(shm_unlink(MEMORY_NAME2) == -1){
-                perror("shm_unlink error:");
-                _exit(EXIT_FAILURE);
-            }
-            close(fd1);
-            close(fd2);
-            close(f1_output);
-            close(f2_output);
-        	kill(pid_1, SIGTERM);
-            kill(pid_2, SIGTERM);
-            write(STDOUT_FILENO, "\nProgramm was ended successfully!\n", 35);
+            
         }
     }
+    if(munmap(addr1, MAX_LEN) == -1){
+        perror("mumap1 error:");
+        _exit(EXIT_FAILURE);
+    }
+    if(munmap(addr2, MAX_LEN) == -1){
+        perror("mumap2 error:");
+        _exit(EXIT_FAILURE);
+    }
+    if(shm_unlink(MEMORY_NAME1) == -1){
+        perror("shm_unlink error:");
+        _exit(EXIT_FAILURE);
+    }
+    if(shm_unlink(MEMORY_NAME2) == -1){
+        perror("shm_unlink error:");
+        _exit(EXIT_FAILURE);
+    }
+    close(fd1);
+    close(fd2);
+    close(f1_output);
+    close(f2_output);
+    kill(pid_1, SIGTERM);
+    kill(pid_2, SIGTERM);
+    write(STDOUT_FILENO, "\nProgramm was ended successfully!\n", 35);
+    free(Filename_1);
+    free(Filename_2);
 }
 

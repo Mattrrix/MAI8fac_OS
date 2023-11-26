@@ -23,18 +23,18 @@ int main(){
         perror("\nmmap1 failed\n");
         _exit(EXIT_FAILURE);
     }
-
-    printf("%s, addr1\n",addr1); //в итоге выводит что addr1 пуст
     
     while(true){
+        // printf("%s, addr1\n",addr1); 
         char *input_strint=NULL;
+        // input_strint = addr1;
         int s_len=inputing(&input_strint, fd1, 0);
         char* output_string=NULL;
 
         if ((input_strint[0]=='-')){
             continue;
-        } else if(s_len<=0 ){
-            break;
+        // } else if(s_len<=0 ){
+        //     break;
         } else{
             if(string_invert(&output_string, input_strint, s_len)==0){
                 write(STDOUT_FILENO, " String_invert Error2! ", 24);
