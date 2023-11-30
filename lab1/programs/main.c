@@ -5,6 +5,7 @@ int main(){
     write(STDOUT_FILENO, "Enter the first filename with file extension(.txt or .doc or .rtf): ", 67);
 
     char *Filename_1=NULL;
+    char *Filename_2=NULL;
 
     if(inputing(&Filename_1 ,STDIN_FILENO, 0)<=0){
         perror("Trying to create 0-value string: ");
@@ -12,6 +13,7 @@ int main(){
     }
 
     int f1_output=open(Filename_1, O_WRONLY | O_CREAT, 0777);
+    int f2_output = 0;
 
     if(f1_output==-1){
         fprintf(stderr, "Can't open the file:  %s", Filename_1);
@@ -22,6 +24,7 @@ int main(){
     pipe_creation(pipe1);
     pipe_creation(pipe2);
     pid_t pid_1 = process_creation();
+    pid_t pid_2 = 0;
     if (pid_1 == 0){
         // the 1st child
         close(pipe1[1]); // fd_pipe_1[1] for writing
@@ -97,7 +100,9 @@ int main(){
             // close(pipe2[0]);
             // close(f2_output);
 
-        } else{ 
+        } 
+        else
+        { 
             // parent
             close(pipe1[0]);
             close(pipe2[0]); 
@@ -107,6 +112,7 @@ int main(){
                 char *s=NULL;
                 int s_len=inputing(&s, STDIN_FILENO, 1);
                 if(s_len==-1){
+                    free(s);
                     break;
                 }
 
@@ -132,15 +138,18 @@ int main(){
                         exit(-1);
                     }
                 }
+                free(s);
             }
-            write(STDOUT_FILENO, "\nProgramm was ended successfully!\n", 35);
-            close(pipe1[1]);
-            close(pipe2[1]);
-            close(f1_output);
-            close(f2_output);
-        	kill(pid_1, SIGTERM);
-            kill(pid_2, SIGTERM);
 
         }
     }
+    close(pipe1[1]);
+    close(pipe2[1]);
+    close(f1_output);
+    close(f2_output);
+    free(Filename_1);
+    free(Filename_2);
+    kill(pid_1, SIGTERM);
+    kill(pid_2, SIGTERM);
+    write(STDOUT_FILENO, "\nProgramm was ended successfully!\n", 35);
 }

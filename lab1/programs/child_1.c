@@ -19,6 +19,7 @@ int main(){
                 write(STDOUT_FILENO, output_string, s_len*sizeof(char));
             }
         }
+        free(input_strint);
     }
     return 0;
 }

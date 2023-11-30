@@ -8,10 +8,12 @@
 #include <sys/types.h> //pid_t
 #include <signal.h> // kill
 #include <time.h> //time(NULL)
+#include <string.h>
 
 #define MAX_LEN 255 // max length for file's names
 #define SIGTERM 15
 
+void kill();
 int inputing(char **output_name, int fd, int endl_status);
 void pipe_creation(int *fd);
 int process_creation();
