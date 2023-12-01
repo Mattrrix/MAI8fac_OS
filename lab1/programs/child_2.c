@@ -9,7 +9,8 @@ int main(){
 
         if ((input_strint[0]=='-')){
             continue;
-        } else if(s_len<=0 ){
+        } else if(s_len<=0){
+            free(input_strint);
             break;
         } else{
             if(string_invert(&output_string, input_strint, s_len)==0){

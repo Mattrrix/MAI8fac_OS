@@ -14,7 +14,7 @@ int main(){
 
     int f1_output=open(Filename_1, O_WRONLY | O_CREAT, 0777);
     int f2_output = 0;
-
+    free(Filename_1);
     if(f1_output==-1){
         fprintf(stderr, "Can't open the file:  %s", Filename_1);
         exit(-1);
@@ -65,11 +65,12 @@ int main(){
         }
         
         int f2_output=open(Filename_2, O_WRONLY | O_CREAT, 0777);
+        free(Filename_2);
         if(f2_output==-1){
             fprintf(stderr, "Can't open the file:  %s", Filename_2);
             exit(-1);
         }     
-
+    
         pid_t pid_2=process_creation();
         if(pid_2==0){
             //the 2nd child
@@ -147,8 +148,6 @@ int main(){
     close(pipe2[1]);
     close(f1_output);
     close(f2_output);
-    free(Filename_1);
-    free(Filename_2);
     kill(pid_1, SIGTERM);
     kill(pid_2, SIGTERM);
     write(STDOUT_FILENO, "\nProgramm was ended successfully!\n", 35);

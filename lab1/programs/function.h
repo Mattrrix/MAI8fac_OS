@@ -13,6 +13,7 @@
 #define MAX_LEN 255 // max length for file's names
 #define SIGTERM 15
 
+/// @brief 
 void kill();
 int inputing(char **output_name, int fd, int endl_status);
 void pipe_creation(int *fd);
