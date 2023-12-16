@@ -14,7 +14,9 @@ int main(){
 
     int f1_output=open(Filename_1, O_WRONLY | O_CREAT, 0777);
     int f2_output;
-    
+
+    free(Filename_1);
+
     if(f1_output==-1){
         fprintf(stderr, "Can't open the file:  %s", Filename_1);
         exit(-1);
@@ -22,8 +24,8 @@ int main(){
 
     int fd1 = shm_open(
         MEMORY_NAME1, 
-        O_CREAT | O_RDWR, 
-        0666);
+        O_CREAT | O_RDWR | O_TRUNC, 
+        0777);
 
     int fd2;
 
@@ -32,21 +34,17 @@ int main(){
         exit(EXIT_FAILURE);
     }
     
-    char* addr1 = NULL;
+    char* addr1 = mmap(NULL, MAX_LEN, PROT_WRITE | PROT_READ , MAP_SHARED , fd1, 0);
     char* addr2 = NULL;
 
-    if( (addr1 = (char*)mmap(
-        NULL, 
-        MAX_LEN, 
-        PROT_WRITE | PROT_READ, 
-        MAP_SHARED, 
-        fd1, 
-        0)) == (void*)-1){
+    if(addr1 == (void*)-1)
+    {
         perror("\nerror mapping fd1 to memory\n");
         _exit(EXIT_FAILURE);
     }
 
-    if(addr1 == MAP_FAILED){
+    if(addr1 == MAP_FAILED)
+    {
         perror("\nmmap1 failed\n");
         _exit(EXIT_FAILURE);
     }
@@ -65,8 +63,11 @@ int main(){
             perror("dup2 error: ");
             exit(-1);
         }
-          
-        if(execl("./child_1", "./child_1", NULL)==-1){
+
+        char str1[sizeof(int)];
+        str1[0] = '1';
+
+        if(execl("./child", "./child", str1, NULL)==-1){
             perror("execl error: ");
             exit(-1);
         }
@@ -84,6 +85,7 @@ int main(){
         }
         
         f2_output=open(Filename_2, O_WRONLY | O_CREAT, 0777);
+        free(Filename_2);
         if(f2_output==-1){
             fprintf(stderr, "Can't open the file:  %s", Filename_2);
             exit(-1);
@@ -91,23 +93,17 @@ int main(){
 
         fd2 = shm_open(
             MEMORY_NAME2, 
-            O_CREAT | O_RDWR, 
-            0666);
+            O_CREAT | O_RDWR | O_TRUNC, 
+            0777);
 
         if (ftruncate(fd2, MAX_LEN) == -1) {
             perror("\nftruncate2 error:\n");
             exit(EXIT_FAILURE);
         }
 
-        // char* addr2 = NULL;
+        char* addr2 = mmap(NULL, MAX_LEN, PROT_WRITE | PROT_READ , MAP_SHARED , fd2, 0);
 
-        if( (addr2 = (char*)mmap(
-            NULL, 
-            MAX_LEN, 
-            PROT_WRITE | PROT_READ, 
-            MAP_SHARED, 
-            fd2, 
-            0))== (void*)-1)
+        if (addr2 == (void*)-1)
         {
             perror("\nerror mapping fd1 to memory: \n");
             _exit(EXIT_FAILURE);
@@ -132,14 +128,17 @@ int main(){
                 exit(-1);
             }
             
-            if(execl("./child_2", "./child_2", NULL)==-1){
+            char str2[sizeof(int)];
+            str2[0] = '2';
+
+            if(execl("./child", "./child", str2, NULL)==-1){
                 perror(" execl error: ");
                 exit(-1);
             }
 
         }
         else
-        { 
+        {   // бесконечный ввод строк
             // parent
             if(write(STDOUT_FILENO, "Enter something you want: ", 27) == -1)
             {
@@ -148,42 +147,75 @@ int main(){
             }
             while(true)
             {
-                char*s=NULL;
-                char str[1] = "-";
-                int s_len=inputing(&s, STDIN_FILENO, 1);
-
-                if(s_len==-1){
-                    free(s);
-                    break;
-                }
+                // char*s=NULL;
+                // char str[1] = "-";
+                // int s_len=inputing(&s, STDIN_FILENO, 1);
+                int i = 0; // итератор
+                int c;
+                // if(s_len==-1){
+                //     free(s);
+                //     break;
+                // }
 
                 int prob_res=probability();
 
                 if (prob_res==1){
-
-                    // strcpy(addr1, s);
-                    memcpy(addr1, s, s_len);
-                    printf("%s, addr1\n",addr1);
                     // strcpy(addr2, str);
-                    memcpy(addr2, str, 2);
-                    printf("%s, addr2\n",addr2);
-
-                }else{
-                    
-                    // strcpy(addr2, s);
-                    memcpy(addr2, s, s_len);
-                    printf("%s, addr2\n",addr2);
-                    // strcpy(addr1, str);
-                    memcpy(addr1, str, 2);
+                    // if (msync(addr2, MAX_LEN, MS_SYNC) == -1) {
+                    //     perror("msync");
+                    //     exit(1);
+                    // }
+                    while ((c = getchar()) != EOF){
+                        addr1[i] = (char)c;
+                        i ++;
+                        if (c == '\n'){
+                            if (msync(addr1, MAX_LEN, MS_SYNC) == -1) 
+                            {
+                                perror("msync");
+                                exit(1);
+                            }
+                            kill(pid_1, SIGUSR1);
+                            break;
+                            }
+                    }
+                    }
+                    // memcpy(addr1, s, s_len);
+                    // printf("%s, addr1\n",addr1);
+                   
+                    // memcpy(addr2, str, 2);
+                    // printf("%s, addr2\n",addr2);
                 
-                    printf("%s, addr1\n",addr1);
+                else{
+                    // strcpy(addr1, str);
+                    // if (msync(addr1, MAX_LEN, MS_SYNC) == -1) {
+                    //     perror("msync");
+                    //     exit(1);
+                    // }
+                    while ((c = getchar()) != EOF){
+                        addr2[i] = (char)c;
+                        i ++;
+                        if (c == '\n'){
+                            if (msync(addr2, MAX_LEN, MS_SYNC) == -1) 
+                            {
+                                perror("msync");
+                                exit(1);
+                            }
+                            kill(pid_2, SIGUSR1);
+                            break;
+                            }
+                    }
+                    // memcpy(addr2, s, s_len);
+                    // printf("%s, addr2\n",addr2);
+                    
+                    // memcpy(addr1, str, 2);
+                    // printf("%s, addr1\n",addr1);
+                }
 
                 }
-                free(s);
             }
-            
-        }
     }
+    kill(pid_1, SIGUSR2);
+    kill(pid_2, SIGUSR2);
     if(munmap(addr1, MAX_LEN) == -1){
         perror("mumap1 error:");
         _exit(EXIT_FAILURE);
@@ -207,7 +239,5 @@ int main(){
     kill(pid_1, SIGTERM);
     kill(pid_2, SIGTERM);
     write(STDOUT_FILENO, "\nProgramm was ended successfully!\n", 35);
-    free(Filename_1);
-    free(Filename_2);
 }
 

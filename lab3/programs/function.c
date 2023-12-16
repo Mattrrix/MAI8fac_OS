@@ -1,12 +1,12 @@
 #include "function.h"
 
-int inputing(char **s_output, int fd, int endl_status){ 
-    int new_l=MAX_LEN; 
+int inputing(char **s_output, int fd, int endl_status){
+    int new_l=MAX_LEN;
     char *line=(char*)malloc(sizeof(char)*new_l); // выделяем память под line размером MAX_LEN = 255 байт
-    memset(line, 0 , new_l);
-    int i=0; 
+    memset(line, 0 , new_l); //заполняем line нулями
+    int i=0;
     char ch; // выделили 1 байт, чтобы считывать STDIN_FILENO посимвольно
-    read(fd, &ch, sizeof(ch)); 
+    read(fd, &ch, sizeof(ch));
     if(ch=='\n'){ // проверка на \n
         line[i]='\n';
         *s_output=line;
@@ -15,26 +15,33 @@ int inputing(char **s_output, int fd, int endl_status){
     while(ch!=EOF && ch!='\0' && ch!='\n' ){ 
         if(i>=new_l){ // проверка не достигнута ли максимальная длина строки
             new_l=new_l*2;
-            line=(char *)realloc(line, new_l); //увеличиваем объем выделенной памяти
+            line=(char *)realloc(line, sizeof(char)*new_l); // увеличиваем объем выделенной памяти
         }
         line[i]=ch;
         i++;
-        read(fd, &ch, sizeof(ch)); // продолжаем посимвольное считывание
+        read(fd, &ch, sizeof(ch));  // продолжаем посимвольное считывание
 
     }
     if(endl_status!=0){ // если нужно вводить строку НЕ один раз
         if(i>=new_l){
             new_l=new_l*2;
-            line=(char *)realloc(line, new_l);
+            line=(char *)realloc(line, sizeof(char)*new_l);
         }
         line[i]='\n';
         i++;
     }
+    if(i>=new_l){
+            new_l=new_l*2;
+            line=(char *)realloc(line, sizeof(char)*new_l);
+        }
     line[i] = '\0';
     *s_output=line;
-    return i;
+    return i;   
 }
 
+// void kill()
+// {
+// }
 
 int process_creation(){
     pid_t pid = fork();
