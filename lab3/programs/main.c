@@ -1,243 +1,202 @@
-#include "function.h"
+#include <stdio.h>
+#include <fcntl.h> //files
+#include <stdlib.h> //malloc, srand, rand
+#include <stdbool.h>
+#include <unistd.h>
+#include <sys/types.h> //pid_t, ftruncate
+#include <signal.h> // kill
+#include <time.h> //time(NULL)
+#include <sys/mman.h>
+#include "stddef.h"
+#include <string.h>
+#include <sys/stat.h>
 
-int main(){
+#define MEMORY_NAME1 "fd_virt1"
+#define MEMORY_NAME2 "fd_virt2"
 
-    write(STDOUT_FILENO, "Enter the first filename with file extension(.txt or .doc or .rtf): \n", 67);
-
-    char *Filename_1=NULL;
-    char *Filename_2=NULL;
-
-    if(inputing(&Filename_1 ,STDIN_FILENO, 0)<=0){
-        perror("Trying to create 0-value string: ");
-        exit(-1);
+char* inputing() { // fixed inputing
+    int len = 0;
+    int capacity = 10; // Начальная емкость 
+    char *s = (char*) malloc(capacity * sizeof(char)); // Выделяем начальную память
+    if (s == NULL) {
+        return NULL; // Проверка выделения памяти
     }
-
-    int f1_output=open(Filename_1, O_WRONLY | O_CREAT, 0777);
-    int f2_output;
-
-    free(Filename_1);
-
-    if(f1_output==-1){
-        fprintf(stderr, "Can't open the file:  %s", Filename_1);
-        exit(-1);
+    char c = getchar();
+    while (c != '\n') {
+        if (len >= capacity - 1) { // Проверка, нужно ли увеличить буфер
+            capacity *= 2;
+            char* temp = (char*) realloc(s, capacity * sizeof(char)); // Пытаемся увеличить буфер
+            if (temp == NULL) { // Проверка удачного realloc
+                free(s);
+                return NULL;
+            }
+            s = temp;
+        }
+        s[len++] = c;
+        c = getchar();
     }
+    s[len] = '\0';
+    return s;
+}
+
+int process_creation(){
+    pid_t pid = fork();
+    if (pid == -1){
+        perror("Call fork was ended with erorr: ");
+        exit(EXIT_FAILURE);
+    }
+    return pid;
+}
+
+int probability(){ // from lab1
+    srand(time(NULL)); //инициализация генератора случайных чисел и установка текущего времени в качестве его базы
+    int a =rand()%10+1; //случайные числа от 1 до 10
+    if(a<=8){
+        return 1;
+    } else{
+        return 2;
+    }
+}
+
+int main() {
+	char *args1[] = {"child", "123",  NULL};
+	char *args2[] = {"child", "456",  NULL};
+
+	write(STDOUT_FILENO, "Enter the first filename with file extension(.txt or .doc or .rtf): ", 68);
+
+	char * Filename_1 = NULL;
+	Filename_1 = inputing();
+
+	if (Filename_1 == NULL) {
+		perror ("Inputing error:");
+		exit(EXIT_FAILURE);
+	}
+
+	int f1_output = open(Filename_1, O_WRONLY| O_CREAT | O_TRUNC , S_IWUSR);
+
+	free(Filename_1);
+
+
+	if (f1_output == -1) {
+		perror ("Can't open the file:");
+		exit(EXIT_FAILURE);
+	}
+
+	write(STDOUT_FILENO, "Enter the second filename with file extension(.txt or .doc or .rtf): ", 69);
+
+	char *Filename_2 = NULL;
+	Filename_2 = inputing();
+
+	if (Filename_2 == NULL) {
+		perror ("Inputing error:");
+		exit(EXIT_FAILURE);
+	}
+
+	int f2_output = open(Filename_2, O_WRONLY| O_CREAT | O_TRUNC, S_IWUSR);
+
+	free(Filename_2);
+
+	if (f2_output == -1) {
+		perror("Can't open the file:");
+		exit(EXIT_FAILURE);
+	}
 
     int fd1 = shm_open(
         MEMORY_NAME1, 
         O_CREAT | O_RDWR | O_TRUNC, 
         0777);
+	ftruncate(fd1 , 1000*sizeof(char)); 
+	char *addr1 = mmap(NULL, 1000*sizeof(char), PROT_WRITE | PROT_READ , MAP_SHARED ,fd1,0);
 
-    int fd2;
-
-    if (ftruncate(fd1, MAX_LEN) == -1) {
-        perror("\nftruncate1 error:\n");
-        exit(EXIT_FAILURE);
-    }
-    
-    char* addr1 = mmap(NULL, MAX_LEN, PROT_WRITE | PROT_READ , MAP_SHARED , fd1, 0);
-    char* addr2 = NULL;
-
-    if(addr1 == (void*)-1)
-    {
-        perror("\nerror mapping fd1 to memory\n");
-        _exit(EXIT_FAILURE);
-    }
-
-    if(addr1 == MAP_FAILED)
-    {
-        perror("\nmmap1 failed\n");
-        _exit(EXIT_FAILURE);
-    }
-
-    pid_t pid_1 = process_creation();
-    pid_t pid_2;
-    if (pid_1 == 0){
-        // the 1st child
-
-        if(dup2(f1_output, STDOUT_FILENO)==-1){
-            perror("dup2 error: ");
-            exit(-1);
-        }
-
-        if(dup2(f1_output, STDERR_FILENO)==-1){
-            perror("dup2 error: ");
-            exit(-1);
-        }
-
-        char str1[sizeof(int)];
-        str1[0] = '1';
-
-        if(execl("./child", "./child", str1, NULL)==-1){
-            perror("execl error: ");
-            exit(-1);
-        }
-
-    }
-    else
-    { 
-        // parent
-        write(STDOUT_FILENO, "\nEnter the second filename with file extension(.txt or .doc or .rtf): ", 71);
-        
-
-        if(inputing(&Filename_2 ,STDIN_FILENO, 0)<=0){
-            perror("Trying to create 0-value string: ");
-            exit(-1);
-        }
-        
-        f2_output=open(Filename_2, O_WRONLY | O_CREAT, 0777);
-        free(Filename_2);
-        if(f2_output==-1){
-            fprintf(stderr, "Can't open the file:  %s", Filename_2);
-            exit(-1);
-        }
-
-        fd2 = shm_open(
-            MEMORY_NAME2, 
-            O_CREAT | O_RDWR | O_TRUNC, 
-            0777);
-
-        if (ftruncate(fd2, MAX_LEN) == -1) {
-            perror("\nftruncate2 error:\n");
+	if (addr1 == (void*)-1){
+            perror("mmap1 error: ");
             exit(EXIT_FAILURE);
         }
 
-        char* addr2 = mmap(NULL, MAX_LEN, PROT_WRITE | PROT_READ , MAP_SHARED , fd2, 0);
+	int fd2 = shm_open(
+		MEMORY_NAME2, 
+		O_CREAT | O_RDWR | O_TRUNC, 
+		0777);
+	ftruncate (fd2 , 1000*sizeof(char)); 
+	char *addr2 = mmap(NULL, 1000*sizeof(char), PROT_WRITE | PROT_READ , MAP_SHARED ,fd2,0);
 
-        if (addr2 == (void*)-1)
-        {
-            perror("\nerror mapping fd1 to memory: \n");
-            _exit(EXIT_FAILURE);
+	if (addr2 == (void*)-1){
+            perror("mmap2 error: ");
+            exit(EXIT_FAILURE);
         }
 
-        if(addr2 == MAP_FAILED){
-            perror("\nmmap failed:\n");
-            _exit(EXIT_FAILURE);
+	pid_t pid_1 = process_creation();
+	if (pid_1 == 0)
+	{   // the 1st child
+        if (dup2(f1_output, STDOUT_FILENO) == -1){
+			perror ("dup2 erorr: ");
+			exit(EXIT_FAILURE);
+		}
+		if(execv("./child", args1) == -1){
+            perror("execv1 erorr: ");
+            exit(EXIT_FAILURE);
+    	}
+	}else
+	{ 	//parent
+	pid_t pid_2 = process_creation();
+	if (pid_2 == 0)
+	{   // the 2st child
+		if (dup2(f2_output, STDOUT_FILENO) == -1){ 
+			perror ("dup2 erorr: ");
+			exit(EXIT_FAILURE);
+		}
+		if(execv("./child", args2) == -1){
+            perror("execv2 erorr: ");
+            exit(EXIT_FAILURE);
+    	}
+	}else
+	{	//parent
+		char symbol;
+		int iterator_1 = 0;
+		int iterator_2 = 0;
+		while(true){
+				int prob_res=probability();
+				if (symbol == EOF){
+					break;
+				}
+				if ((iterator_1 == 1000*sizeof(char)) || (iterator_2 == 1000*sizeof(char))){
+					perror("increase the size of the memory mapped file (files): ");
+					exit(EXIT_FAILURE);
+				}
+				while(((symbol = getchar()) != EOF) || (iterator_1 != 1000*sizeof(char)) || (iterator_2 != 1000*sizeof(char))){
+					if (prob_res==1){			
+						addr1[iterator_1] = (char)symbol;
+						iterator_1 ++;
+					} else {
+						addr2[iterator_2] = (char)symbol;
+						iterator_2 ++;
+					}
+					if (symbol == '\n'){	
+						if (prob_res==1){
+							kill(pid_1, SIGUSR1);
+							break;
+						}
+						else{
+							kill(pid_2, SIGUSR1);
+							break;
+						}
+					}		
+				}
+			}
+		close(fd1);
+		close(fd2);
+		close(f1_output);
+        close(f2_output);
+		if(shm_unlink(MEMORY_NAME1) == -1){
+            perror("shm_unlink(MEMORY_NAME1) error: ");
+            exit(EXIT_FAILURE);
         }
-
-        pid_2=process_creation();
-        if(pid_2==0){
-            //the 2nd child
-            close(f1_output);
-
-            if(dup2(f2_output, STDOUT_FILENO)==-1){
-                perror("dup2 error: ");
-                exit(-1);
-            }
-            if(dup2(f2_output, STDERR_FILENO)==-1){
-                perror("dup2 error: ");
-                exit(-1);
-            }
-            
-            char str2[sizeof(int)];
-            str2[0] = '2';
-
-            if(execl("./child", "./child", str2, NULL)==-1){
-                perror(" execl error: ");
-                exit(-1);
-            }
-
+		if(shm_unlink(MEMORY_NAME2) == -1){
+            perror("shm_unlink(MEMORY_NAME2) error: ");
+            exit(EXIT_FAILURE);
         }
-        else
-        {   // бесконечный ввод строк
-            // parent
-            if(write(STDOUT_FILENO, "Enter something you want: ", 27) == -1)
-            {
-                perror("write error: ");
-                exit(-1);
-            }
-            while(true)
-            {
-                // char*s=NULL;
-                // char str[1] = "-";
-                // int s_len=inputing(&s, STDIN_FILENO, 1);
-                int i = 0; // итератор
-                int c;
-                // if(s_len==-1){
-                //     free(s);
-                //     break;
-                // }
-
-                int prob_res=probability();
-
-                if (prob_res==1){
-                    // strcpy(addr2, str);
-                    // if (msync(addr2, MAX_LEN, MS_SYNC) == -1) {
-                    //     perror("msync");
-                    //     exit(1);
-                    // }
-                    while ((c = getchar()) != EOF){
-                        addr1[i] = (char)c;
-                        i ++;
-                        if (c == '\n'){
-                            if (msync(addr1, MAX_LEN, MS_SYNC) == -1) 
-                            {
-                                perror("msync");
-                                exit(1);
-                            }
-                            kill(pid_1, SIGUSR1);
-                            break;
-                            }
-                    }
-                    }
-                    // memcpy(addr1, s, s_len);
-                    // printf("%s, addr1\n",addr1);
-                   
-                    // memcpy(addr2, str, 2);
-                    // printf("%s, addr2\n",addr2);
-                
-                else{
-                    // strcpy(addr1, str);
-                    // if (msync(addr1, MAX_LEN, MS_SYNC) == -1) {
-                    //     perror("msync");
-                    //     exit(1);
-                    // }
-                    while ((c = getchar()) != EOF){
-                        addr2[i] = (char)c;
-                        i ++;
-                        if (c == '\n'){
-                            if (msync(addr2, MAX_LEN, MS_SYNC) == -1) 
-                            {
-                                perror("msync");
-                                exit(1);
-                            }
-                            kill(pid_2, SIGUSR1);
-                            break;
-                            }
-                    }
-                    // memcpy(addr2, s, s_len);
-                    // printf("%s, addr2\n",addr2);
-                    
-                    // memcpy(addr1, str, 2);
-                    // printf("%s, addr1\n",addr1);
-                }
-
-                }
-            }
-    }
-    kill(pid_1, SIGUSR2);
-    kill(pid_2, SIGUSR2);
-    if(munmap(addr1, MAX_LEN) == -1){
-        perror("mumap1 error:");
-        _exit(EXIT_FAILURE);
-    }
-    if(munmap(addr2, MAX_LEN) == -1){
-        perror("mumap2 error:");
-        _exit(EXIT_FAILURE);
-    }
-    if(shm_unlink(MEMORY_NAME1) == -1){
-        perror("shm_unlink error:");
-        _exit(EXIT_FAILURE);
-    }
-    if(shm_unlink(MEMORY_NAME2) == -1){
-        perror("shm_unlink error:");
-        _exit(EXIT_FAILURE);
-    }
-    close(fd1);
-    close(fd2);
-    close(f1_output);
-    close(f2_output);
-    kill(pid_1, SIGTERM);
-    kill(pid_2, SIGTERM);
-    write(STDOUT_FILENO, "\nProgramm was ended successfully!\n", 35);
+        kill(pid_1, SIGUSR2);
+        kill(pid_2, SIGUSR2);
+		}
 }
-
+}
