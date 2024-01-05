@@ -46,7 +46,7 @@ void kill()
 void pipe_creation(int *fd){
     if (pipe(fd) == -1){
         perror("Call pipe was ended with error: ");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -54,7 +54,7 @@ int process_creation(){
     pid_t pid = fork();
     if (pid == -1){
         perror("Call fork was ended with erorr: ");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     return pid;
 }
@@ -78,5 +78,4 @@ bool string_invert(char **output_string, char* input_string, int len){ //fixed
     free(*output_string);
     *output_string=tmp;
     return true;
-
 }

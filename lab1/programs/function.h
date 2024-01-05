@@ -9,6 +9,7 @@
 #include <signal.h> // kill
 #include <time.h> //time(NULL)
 #include <string.h>
+#include <sys/stat.h>
 
 #define MAX_LEN 255 // max length for file's names
 #define SIGTERM 15
