@@ -163,7 +163,7 @@ int main() {
 					perror("increase the size of the memory mapped file (files): ");
 					exit(EXIT_FAILURE);
 				}
-				while(((symbol = getchar()) != EOF) || (iterator_1 != 1000*sizeof(char)) || (iterator_2 != 1000*sizeof(char))){
+				while(((symbol = getchar()) != EOF) && (iterator_1 != 1000*sizeof(char)) && (iterator_2 != 1000*sizeof(char))){
 					if (prob_res==1){			
 						addr1[iterator_1] = (char)symbol;
 						iterator_1 ++;
