@@ -30,7 +30,7 @@ bool string_invert(char **output_string, char* input_string, int len){ // from l
 }
 
 void writer() {
-    int c;
+    char c;
     char* output_string = NULL;
     char* input_string = NULL;
     int input_string_size = 0; 
@@ -59,6 +59,10 @@ void writer() {
 }
 
 void finish(){
+    if(munmap(addr_global, 1000*sizeof(char)) == -1){
+        perror("munmap(child) error:");
+        exit(EXIT_FAILURE);
+    }
     exit(EXIT_SUCCESS);
 }
 

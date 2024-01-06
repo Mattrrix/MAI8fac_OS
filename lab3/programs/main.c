@@ -156,9 +156,6 @@ int main() {
         int iterator_2 = 0;
         while(true){
                 int prob_res=probability();
-                if (symbol == EOF){
-                    break;
-                }
                 if ((iterator_1 == 1000*sizeof(char)) || (iterator_2 == 1000*sizeof(char))){
                     perror("increase the size of the memory mapped file (files): ");
                     exit(EXIT_FAILURE);
@@ -181,6 +178,9 @@ int main() {
                             break;
                         }
                     }		
+                }
+                if (symbol == EOF){
+                    break;
                 }
             }
         kill(pid_1, SIGUSR2);
