@@ -59,10 +59,6 @@ void writer() {
 }
 
 void finish(){
-    if(munmap(addr_global, 1000*sizeof(char)) == -1){
-        perror("munmap error:");
-        exit(EXIT_FAILURE);
-    }
     exit(EXIT_SUCCESS);
 }
 

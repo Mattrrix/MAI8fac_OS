@@ -183,6 +183,8 @@ int main() {
 					}		
 				}
 			}
+		kill(pid_1, SIGUSR2);
+        kill(pid_2, SIGUSR2);
 		close(fd1);
 		close(fd2);
 		close(f1_output);
@@ -195,8 +197,14 @@ int main() {
             perror("shm_unlink(MEMORY_NAME2) error: ");
             exit(EXIT_FAILURE);
         }
-        kill(pid_1, SIGUSR2);
-        kill(pid_2, SIGUSR2);
+		if(munmap(addr1, 1000*sizeof(char)) == -1){
+			perror("munmap1 error:");
+			exit(EXIT_FAILURE);
+   		}
+		if(munmap(addr2, 1000*sizeof(char)) == -1){
+			perror("munmap2 error:");
+			exit(EXIT_FAILURE);
+   		}
 		}
 }
 }
