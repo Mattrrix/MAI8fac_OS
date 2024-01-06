@@ -65,19 +65,19 @@ void finish(){
 int main(int argc, const char *argv[]){
 
     int arg = atoi(argv[1]);
-	int shm_fd = 0;
+    int shm_fd = 0;
 
-	if (arg == 123) {
-		shm_fd = shm_open(
+    if (arg == 123) {
+        shm_fd = shm_open(
             MEMORY_NAME1, 
             O_RDWR, 
             S_IRUSR);
-	}else{
-		shm_fd = shm_open(
+    }else{
+        shm_fd = shm_open(
             MEMORY_NAME2, 
             O_RDWR, 
             S_IRUSR);
-	}
+    }
     char *addr = mmap(NULL, 1000*sizeof(char),  PROT_WRITE | PROT_READ , MAP_SHARED , shm_fd, 0);
     if (addr == (void*)-1){
             perror("mmap (child) error: ");
@@ -89,6 +89,6 @@ int main(int argc, const char *argv[]){
     while (true)
     {
     signal (SIGUSR1, writer);
-	signal (SIGUSR2, finish);
+    signal (SIGUSR2, finish);
     }
 }
