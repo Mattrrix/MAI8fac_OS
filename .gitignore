@@ -6,3 +6,7 @@ main
 child_1
 child_2
 child
+linking
+runtime
+*.o
+*.so
