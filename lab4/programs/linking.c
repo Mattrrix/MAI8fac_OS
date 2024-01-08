@@ -38,7 +38,7 @@ int main(){
                 printf("%d ", array[i]);
             }
             printf("\n");
-
+            free(array);
         } else {
             printf("The program successfuly finished\n");
             exit(EXIT_SUCCESS);

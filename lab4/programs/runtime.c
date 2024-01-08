@@ -128,10 +128,11 @@ int main(){
                 printf("%d ", array[i]);
             }
             printf("\n\n");
+            free(array);
         } else {
+            dlclose(cur_lib);
             printf("The program successfuly finished\n");
             exit(EXIT_SUCCESS);
         }           
     }
-    dlclose(cur_lib);
 }
