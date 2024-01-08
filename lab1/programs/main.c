@@ -14,7 +14,7 @@ int main(){
         exit(EXIT_FAILURE);
     }
 
-    int f1_output=open(Filename_1, O_WRONLY | O_CREAT, S_IWUSR);
+    int f1_output=open(Filename_1, O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR);
 
     free(Filename_1);
 
@@ -60,7 +60,7 @@ int main(){
             exit(EXIT_FAILURE);
         }
         
-        int f2_output=open(Filename_2, O_WRONLY | O_CREAT, S_IWUSR);
+        int f2_output=open(Filename_2, O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR);
 
         free(Filename_2);
 
@@ -140,5 +140,5 @@ int main(){
     close(f2_output);
     kill(pid_1, SIGTERM);
     kill(pid_2, SIGTERM);
-    write(STDOUT_FILENO, "\nProgramm was ended successfully!\n", 35);
+    write(STDOUT_FILENO, "Programm was ended successfully!\n", 34);
 }
