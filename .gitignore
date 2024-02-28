@@ -10,3 +10,5 @@ linking
 runtime
 *.o
 *.so
+user
+server
