@@ -8,16 +8,18 @@
 
 char message[256]; // буфер
 
-void killwithchildren(TNode* root, void * publisher) {  
-    if (root == NULL) {
+void killWithChildren(TNode *node, void * publisher) { // удаляем процессы
+    if (node == NULL) {
         return;
     }
-    sprintf(message, "kill %d", root->data); // записываем в message(буффер)
-    zmq_send(publisher, message, strlen(message), 0); // отправляем сигнал узлу, чтобы он напечатал, что он мертв
-    memset(message, 0, sizeof(message)); // очищаем message (буфер)
-    
-    killwithchildren(root->firstChild, publisher); 
-    killwithchildren(root->nextBrother, publisher);
+    // Отключаем текущий узел
+    sprintf(message, "kill %d", node->data); 
+    zmq_send(publisher, message, strlen(message), 0);
+    memset(message, 0, sizeof(message));
+
+    // Рекурсивно отключаем всех потомков
+    killWithChildren(node->firstChild, publisher);
+    killWithChildren(node->nextBrother, publisher);
 }
 
 int main() {
@@ -70,7 +72,6 @@ int main() {
             }
         }
         
-
         else if (strcmp(command, "exec") == 0) {
             sscanf(input, "%*s %d %s", &arg1, subcommand);
             TNode *searching = find_node(root, arg1);
@@ -84,32 +85,25 @@ int main() {
                 zmq_send(publisher, input, strlen(input), 0);
             }
             else {
-                printf("You can't give an option to dead root\n");
+                printf("You can't give an option to dead r3oot\n");
                 continue;
             }
         }
 
         else if (strcmp(command, "kill") == 0) {
             sscanf(input, "%*s %d", &arg1);
-            TNode *search_to_kill = find_node(root, arg1);
-            if (search_to_kill == NULL) {
-                printf("Error: id Not Found\n");
-                continue;
+            TNode *node4 = find_node(root, arg1);
+            if (arg1 == -1)
+                printf("Nope\n");
+            else if(node4 == NULL){
+                printf("This node is dead or doesn`t exist ever\n");
             }
-            if (arg1 == -1) {
-                printf("You can't kill control procces\n");
-                continue;
-            }
-            else {
-                killwithchildren(search_to_kill->firstChild, publisher); // рекурсивная отправка сообщений о смерти от дочерних узлов
-                killwithchildren(search_to_kill->nextBrother, publisher); // рекурсивная отправка сообщений о смерти от дочерних узлов
+            else{
                 zmq_send(publisher, input, strlen(input), 0);
-
-                disableNode(search_to_kill->firstChild); // рекурсивно убийство дочерних узлов
-                disableNode(search_to_kill->nextBrother); // рекурсивно убийство дочерних узлов
-                disableOneNode(search_to_kill); // убийство родительского узла
+                killWithChildren(node4->firstChild, publisher);
+                disableNode(node4->firstChild);
+                disableOneNode(node4);
             }
-            
         }
         else if (strcmp(command, "heartbit") == 0) {
             sscanf (input, "%*s %d", &arg1);
