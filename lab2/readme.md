@@ -2,7 +2,7 @@
 
 ## Отчет
 
-[Отчет в Google Documents]() (пока не готов)
+[Отчет в Google Documents](https://docs.google.com/document/d/16RQeVaUV1rXNvNktrJGhrDpSETnrBsfy/edit?usp=sharing&ouid=106682347432010536339&rtpof=true&sd=true) 
 
 ## Цель работы
 Целью является приобретение практических навыков в:
