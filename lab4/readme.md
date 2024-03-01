@@ -1,7 +1,7 @@
 # Лабораторная работа №4
 
 ## Отчет
-[Отчет в Google Documents]() (пока не готов)
+[Отчет в Google Documents](https://docs.google.com/document/d/1jxXF1NvN-wMW8bgQhZJfIJXy8xZZlApo/edit?usp=sharing&ouid=106682347432010536339&rtpof=true&sd=true) 
 
 ## Тема - Динамические  библиотеки
 
